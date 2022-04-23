@@ -33,7 +33,7 @@ export default async (req, res) => {
   if (batch_job.created_by !== userId) {
     throw new MedusaError(
       MedusaError.Types.NOT_ALLOWED,
-      "Cannot confirm batch jobs created by other users"
+      "Cannot cancel batch jobs created by other users"
     )
   }
 
