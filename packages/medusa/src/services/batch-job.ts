@@ -50,26 +50,8 @@ class BatchJobService extends BaseService<BatchJobService> {
     return cloned
   }
 
-  async cancel(batchJobId: string, userId: string): Promise<BatchJob> {
+  async cancel(batchJobId: string): Promise<BatchJob> {
     return await this.atomicPhase_(async (manager) => {
-      const batchJobRepo: BatchJobRepository = manager.getCustomRepository(
-        this.batchJobRepository_
-      )
-
-      const batchJob = await this.retrieve(batchJobId)
-
-      if (!batchJob || batchJob.created_by !== userId) {
-        throw new MedusaError(
-          MedusaError.Types.NOT_ALLOWED,
-          "Cannot cancel batch jobs created by other users"
-        )
-      }
-
-      batchJob.cancelled_at = new Date()
-      batchJob.status = BatchJobStatus.CANCELED
-
-      await batchJobRepo.save(batchJob)
-
       const result = await this.retrieve(batchJobId)
 
       await this.eventBus_
@@ -108,37 +90,11 @@ class BatchJobService extends BaseService<BatchJobService> {
 
   /*
    * if job is started with dry_run: true, then it's required
-   * to complete the job before it's written to DB
+   * to confirm the job before it's written to DB
    */
-  async complete(batchJobId: string, userId: string): Promise<BatchJob> {
+  async confirm(batchJobId: string): Promise<BatchJob> {
     return await this.atomicPhase_(async (manager) => {
-      const batchJobRepo: BatchJobRepository = manager.getCustomRepository(
-        this.batchJobRepository_
-      )
-
-      const batchJob = await batchJobRepo.findOne(batchJobId)
-
-      if (!batchJob || batchJob.created_by !== userId) {
-        throw new MedusaError(
-          MedusaError.Types.NOT_ALLOWED,
-          "Cannot complete batch jobs created by other users"
-        )
-      }
-
-      // check that job has run
-      if (batchJob.status !== BatchJobStatus.AWAITING_CONFIRMATION) {
-        throw new MedusaError(
-          MedusaError.Types.INVALID_DATA,
-          `Cannot complete a batch job with status "${batchJob.status}"`
-        )
-      }
-
-      batchJob.completed_at = new Date()
-      batchJob.status = BatchJobStatus.COMPLETED
-
-      await batchJobRepo.save(batchJob)
-
-      const result = (await batchJobRepo.findOne(batchJobId)) as BatchJob
+      const result = await this.retrieve(batchJobId)
 
       await this.eventBus_
         .withTransaction(manager)
