@@ -7,6 +7,7 @@ import { BatchJobRepository } from "../repositories/batch-job"
 import { BatchJobStatus, FilterableBatchJobProps } from "../types/batch-job"
 import { FindConfig } from "../types/common"
 import EventBusService from "./event-bus"
+import { AdminGetRegionsRegionFulfillmentOptionsRes } from "../api"
 
 type InjectedContainer = {
   manager: EntityManager
@@ -53,6 +54,13 @@ class BatchJobService extends BaseService<BatchJobService> {
   async cancel(batchJobId: string): Promise<BatchJob> {
     return await this.atomicPhase_(async (manager) => {
       const result = await this.retrieve(batchJobId)
+
+      if (result.status === BatchJobStatus.COMPLETED) {
+        throw new MedusaError(
+          MedusaError.Types.DUPLICATE_ERROR,
+          "Cannot cancel completed batch job"
+        )
+      }
 
       await this.eventBus_
         .withTransaction(manager)
