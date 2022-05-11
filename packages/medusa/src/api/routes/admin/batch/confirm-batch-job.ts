@@ -28,12 +28,14 @@ export default async (req, res) => {
 
   const batchJobService: BatchJobService = req.scope.resolve("batchJobService")
 
-  const batch_job = await batchJobService.retrieve(id)
+  const batchJob = await batchJobService.retrieve(id, {
+    select: ["created_by"],
+  })
 
-  if (batch_job.created_by !== userId) {
+  if (batchJob.created_by !== userId) {
     throw new MedusaError(
       MedusaError.Types.NOT_ALLOWED,
-      "Cannot confirm batch jobs created by other users"
+      "Cannot confirm batch jobs that does not belong to the logged in user"
     )
   }
 
