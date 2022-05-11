@@ -1,11 +1,10 @@
 import { Router } from "express"
-import { BatchJob } from "../../../.."
+import { BatchJob } from "../../../../models"
 import { DeleteResponse, PaginatedResponse } from "../../../../types/common"
 import middlewares from "../../../middlewares"
 
-const route = Router()
-
 export default (app) => {
+  const route = Router()
   app.use("/batch", route)
 
   route.get(
