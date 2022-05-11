@@ -1,25 +1,28 @@
 import { EntityManager } from "typeorm"
-import { BaseService } from "medusa-interfaces"
 import { MedusaError } from "medusa-core-utils"
 
 import { BatchJob } from "../models"
 import { BatchJobRepository } from "../repositories/batch-job"
-import { BatchJobStatus, FilterableBatchJobProps } from "../types/batch-job"
+import { FilterableBatchJobProps } from "../types/batch-job"
 import { FindConfig } from "../types/common"
 import EventBusService from "./event-bus"
+import { TransactionBaseService } from "../interfaces/transaction-base-service"
+import { buildQuery, validateId } from "../utils"
 
-type InjectedContainer = {
+type InjectedDependencies = {
   manager: EntityManager
   eventBusService: EventBusService
   batchJobRepository: typeof BatchJobRepository
 }
 
-class BatchJobService extends BaseService<BatchJobService> {
-  protected readonly container_: InjectedContainer
+class BatchJobService extends TransactionBaseService<BatchJobService> {
+  protected manager_: EntityManager
+  protected transactionManager_: EntityManager | undefined
+
   protected readonly batchJobRepository_: typeof BatchJobRepository
   protected readonly eventBus_: EventBusService
 
-  static Events = {
+  static readonly Events = {
     CREATED: "batch.created",
     UPDATED: "batch.updated",
     COMPLETED: "batch.completed",
@@ -27,41 +30,30 @@ class BatchJobService extends BaseService<BatchJobService> {
     PROCESS_COMPLETE: "batch-process.complete",
   }
 
-  constructor(container: InjectedContainer) {
-    super()
+  constructor({
+    manager,
+    batchJobRepository,
+    eventBusService,
+  }: InjectedDependencies) {
+    // eslint-disable-next-line prefer-rest-params
+    super(arguments[0])
 
-    this.container_ = container
-    this.manager_ = container.manager
-    this.batchJobRepository_ = container.batchJobRepository
-    this.eventBus_ = container.eventBusService
-  }
-
-  withTransaction(transactionManager: EntityManager): BatchJobService {
-    if (!transactionManager) {
-      return this
-    }
-
-    const cloned = new BatchJobService({
-      ...this.container_,
-      manager: transactionManager,
-    })
-
-    cloned.transactionManager_ = transactionManager
-
-    return cloned
+    this.manager_ = manager
+    this.batchJobRepository_ = batchJobRepository
+    this.eventBus_ = eventBusService
   }
 
   async retrieve(
     batchJobId: string,
     config: FindConfig<BatchJob> = {}
-  ): Promise<BatchJob> {
+  ): Promise<BatchJob | never> {
     return await this.atomicPhase_(async (manager) => {
       const batchJobRepo: BatchJobRepository = manager.getCustomRepository(
         this.batchJobRepository_
       )
 
-      const validatedId = this.validateId_(batchJobId)
-      const query = this.buildQuery_({ id: validatedId }, config)
+      const validatedId = validateId(batchJobId)
+      const query = buildQuery({ id: validatedId }, config)
       const batchJob = await batchJobRepo.findOne(query)
 
       if (!batchJob) {
@@ -105,7 +97,7 @@ class BatchJobService extends BaseService<BatchJobService> {
           this.batchJobRepository_
         )
 
-        const query = this.buildQuery_(selector, config)
+        const query = buildQuery(selector, config)
         return await batchJobRepo.findAndCount(query)
       }
     )
