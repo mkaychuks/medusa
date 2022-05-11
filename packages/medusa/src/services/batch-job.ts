@@ -67,10 +67,6 @@ class BatchJobService extends TransactionBaseService<BatchJobService> {
     })
   }
 
-  /*
-   * if job is started with dry_run: true, then it's required
-   * to confirm the job before it's written to DB
-   */
   async confirm(batchJobId: string): Promise<BatchJob> {
     return await this.atomicPhase_(async (manager) => {
       const result = await this.retrieve(batchJobId)
