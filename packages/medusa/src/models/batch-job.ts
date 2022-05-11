@@ -104,14 +104,6 @@ export class BatchJob {
  *    enum:
  *      - product_import
  *      - product_export
- *  status:
- *    description: "The status of the batch job."
- *    type: string
- *    enum:
- *      - created
- *      - processing
- *      - awaiting_confirmation
- *      - completed
  *  created_by:
  *    description: "The unique identifier of the user that created the batch job."
  *    type: string
@@ -121,8 +113,24 @@ export class BatchJob {
  *  result:
  *    description: "The result of the batch job."
  *    type: object
+ *  processing_at:
+ *    description: "The date with timezone at which the processing of the batch job began."
+ *    type: string
+ *    format: date-time
+ *  confirmed_at:
+ *    description: "The date with timezone at which the batch job was confirmed."
+ *    type: string
+ *    format: date-time
+ *  completed_at:
+ *    description: "The date with timezone at which the batch job was completed."
+ *    type: string
+ *    format: date-time
+ *  canceled_at:
+ *    description: "The date with timezone at which the batch job was cancelled."
+ *    type: string
+ *    format: date-time
  *  created_at:
- *    description: "The date with timezone at which the resource was created."
+ *    description: "The date with timezone at which the ."
  *    type: string
  *    format: date-time
  *  updated_at:
