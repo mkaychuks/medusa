@@ -33,10 +33,10 @@ export class BatchJob {
   created_by_user: User
 
   @DbAwareColumn({ type: "jsonb", nullable: true })
-  context: Record<string, unknown>
+  context: Record<string, unknown> | null
 
   @DbAwareColumn({ type: "jsonb", nullable: true })
-  result: Record<string, unknown>
+  result: Record<string, unknown> | null
 
   @Column({ type: resolveDbType("timestamptz"), nullable: true })
   processing_at: Date | null
